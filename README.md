@@ -1,5 +1,14 @@
 # Mambo GPT: Decoder-only model for chemical reaction experiments
 
+This is a full-reimplementation of a decoder architecture for machine-translation. It includes the following NON-Optimised features: 
+   - Seperate Positional Encodings for SRC/TGT.
+   - SRC/TGT Masked encoding.
+   - Bidirectional Attention on SRC tokens - Prefix-LM style.
+
+
+Please be-aware the inference is non-optimised, so pretty slow when compared to HF implementations. This was a toy-architecture for me to assess how accurate decoders can be for chemical translation.
+
+
 ## Setting up the Environment
 
 To set up the environment required for running the Mambo GPT model, follow these steps:
@@ -7,7 +16,7 @@ To set up the environment required for running the Mambo GPT model, follow these
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/mambo-gpt/mambo-gpt.git
-   cd mambo-gpt
+   cd rxngpt
    ```
 
 2. **Create Conda Environment:**
@@ -19,7 +28,8 @@ To set up the environment required for running the Mambo GPT model, follow these
 3. **Activate the Environment:**
    Activate the newly created Conda environment.
    ```bash
-   conda activate nanogpt
+   conda activate rxngpt
+   pip install -e .
    ```
 
 4. **Verify Installation:**
@@ -29,10 +39,5 @@ To set up the environment required for running the Mambo GPT model, follow these
    ```
 
 5. **Usage:**
-   Now you're ready to use the Mambo GPT model for chemical reaction experiments. Refer to the project documentation for detailed usage instructions.
-
-
-
-## DOwnload dataset with following command: 
-
+   Now you're ready to use the RXN GPT model for chemical reaction experiments.
 

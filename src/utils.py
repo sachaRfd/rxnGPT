@@ -267,4 +267,10 @@ def collate_fn_right_padding_with_src_mask_left(r_and_p_list):
     return X, Y, padded_r, padded_p, mask, src_mask, tgt_mask
 
 
-# if __name__ == "__main__":
+def get_lr(iteration, warmup_iters, max_lr, lr_decay_iters, min_lr):
+    if iteration < warmup_iters:
+        return (max_lr / warmup_iters) * iteration
+    else:
+        return min_lr + (max_lr - min_lr) * math.exp(
+            -1.0 * (iteration - warmup_iters) / lr_decay_iters
+        )

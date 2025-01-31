@@ -1,11 +1,8 @@
 """
-Full definition of a GPT Language Model, all of it in this single file.
-References:
-1) the official GPT-2 TensorFlow implementation released by OpenAI:
-https://github.com/openai/gpt-2/blob/master/src/model.py
-2) huggingface/transformers PyTorch implementation:
-https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+Full implementation of Transformer Decoder Model.
+
 """
+
 
 import math
 import inspect
@@ -57,7 +54,6 @@ class CausalSelfAttention(nn.Module):
             torch.nn.functional,
             "scaled_dot_product_attention",
         )
-        # self.flash = False
         if not self.flash:
             print(
                 "WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0"  # noqa
@@ -106,20 +102,17 @@ class CausalSelfAttention(nn.Module):
 
         # Remove padding from being used in the attention calculation:
         if pad_mask is not None:
-            # Create mask for attention where pad_mask is 3: which has bs:
+            # Create mask for attention where pad_mask is 2:
             pad_mask_att = pad_mask == 2
             pad_mask_att = pad_mask_att.unsqueeze(1).unsqueeze(1)
             pad_mask_att = pad_mask_att.repeat(1, attn_weight.shape[1], 1, 1)
-
             attn_bias = attn_bias.repeat(pad_mask_att.shape[0], 1, 1, 1)
             attn_bias = attn_bias.masked_fill(pad_mask_att, float("-inf"))
             inf_mask = torch.isinf(attn_bias).all(dim=-1)
             attn_bias[inf_mask] = 0
 
         attn_weight += attn_bias
-
         attn_weight = torch.softmax(attn_weight, dim=-1)
-
         return attn_weight @ value
 
     def forward(self, x, attention_mask=None, src_tgt_language_mask=None):
@@ -143,8 +136,6 @@ class CausalSelfAttention(nn.Module):
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)  # noqa
         # efficient attention using Flash Attention CUDA kernels
-        # print(self.flash)
-        # exit()
         if self.flash:
             if attention_mask is not None:  # or src_tgt_language_mask is not None:
                 # Create causal mask - (bs, n_head, T, T)
@@ -155,34 +146,15 @@ class CausalSelfAttention(nn.Module):
                 causal_mask = causal_mask.unsqueeze(0).repeat(B, 1, 1)
 
                 if src_tgt_language_mask is not None:
-                    # for sample in range(B):
-                    #     # Add true to all 1s in the src_tgt_mask:
-                    #     causal_mask[sample] = causal_mask[sample].masked_fill(
-                    #         src_tgt_language_mask[sample] == 1, True
-                    #     )
                     # Expand src_tgt_language_mask to match the shape of causal_mask
                     expanded_src_tgt_language_mask = src_tgt_language_mask.unsqueeze(
                         1
                     ).expand(-1, T, -1)
-                    # print("Here in  causal mask section: ")
-                    # print(causal_mask.shape)
-                    # print(causal_mask)
 
                     # Use the expanded src_tgt_language_mask to modify causal_mask
                     causal_mask = causal_mask.masked_fill(
                         expanded_src_tgt_language_mask == 1, True
                     )
-
-                    # print("After adding bidireactional modification: ")
-                    # print(causal_mask[0])
-
-                    # # save the causal_mask to a file:
-                    # causal_mask_list = causal_mask[0].tolist()
-                    # with open("causal_mask.txt", "w") as f:
-                    #     for item in causal_mask_list:
-                    #         f.write("%s\n" % item)
-
-                    # exit()
 
                 # View attention mask:
                 attention_mask = attention_mask.unsqueeze(1).bool()
@@ -196,10 +168,9 @@ class CausalSelfAttention(nn.Module):
                 output_causal_mask = torch.where(
                     causal_mask.bool() & ~attention_mask, False, output_causal_mask
                 )
-
                 causal_mask = output_causal_mask
 
-                # # Add the head to mask:
+                # Add the head to mask:
                 causal_mask = causal_mask.unsqueeze(1).repeat(1, self.n_head, 1, 1)
 
                 y = torch.nn.functional.scaled_dot_product_attention(
@@ -377,7 +348,7 @@ class GPT(nn.Module):
             # Get masks:
             mask_1 = src_tgt_language_mask != 1
 
-            for i in range(b):
+            for i in range(b): # Could be optimised.
                 # Get where the products are:
                 mask_sum = mask_1[i].sum()
 
@@ -577,238 +548,3 @@ class GPT(nn.Module):
         print("Generated sample: ", "".join(predicted_product))
         could_finish = 0
         return predicted_product, could_finish
-
-    # @torch.no_grad()
-    # def generate_batch(
-    #     self,
-    #     idx,
-    #     src_tgt_mask,
-    #     attention_mask,
-    #     max_new_tokens: int,
-    #     temperature: float = 1.0,
-    #     top_k: int = None,
-    #     greedy_decode: str = None,
-    #     label2token: dict = None,
-    # ):
-    #     """
-    #     Greedy decoding for a batch of samples.
-    #     """  # noqa
-    #     assert greedy_decode == "greedy", "please choose a valid decoding algo."
-    #     assert temperature == 1.0 if greedy_decode == "greedy" else True
-    #     assert top_k is not None if greedy_decode in ["beam", "sampling"] else True
-
-    #     # Setup tensors:
-    #     to_add_to_src_tgt_mask = torch.tensor([[2]], device=idx.device).repeat(
-    #         src_tgt_mask.size(0), 1
-    #     )
-    #     to_add_to_att_mask = torch.ones(1, 1, device=idx.device).repeat(
-    #         src_tgt_mask.size(0), 1
-    #     )
-    #     predicted_product = torch.zeros(idx.size(0), max_new_tokens, device=idx.device)
-
-    #     # Empty list to store the outputs but make it the size of bs:
-    #     # output_product = [None] * idx.size(0)
-
-    #     is_finished = [False] * idx.size(0)
-
-    #     for i in range(max_new_tokens):
-    #         logits, _ = self(
-    #             idx=idx,
-    #             targets=None,
-    #             Products=None,
-    #             src_tgt_language_mask=src_tgt_mask,
-    #             use_seperate_pos_enc=True,
-    #             attention_mask=attention_mask,
-    #         )
-    #         # print(logits.shape)
-    #         # exit()
-
-    #         # pluck the logits at the final step and scale by desired temperature
-    #         logits = logits[:, -1, :] / temperature
-
-    #         # choose the index with the highest probability:
-    #         idx_next = torch.argmax(logits, dim=-1, keepdim=True)
-
-    #         # append the chosen index to the running sequence and continue
-    #         idx = torch.cat((idx, idx_next), dim=1)
-    #         predicted_product[:, i] = idx_next.squeeze()
-
-    #         # append new token to src_tgt_mask:
-    #         src_tgt_mask = torch.cat(
-    #             (
-    #                 src_tgt_mask,
-    #                 torch.tensor([[2]], device=idx.device).repeat(
-    #                     src_tgt_mask.size(0), 1
-    #                 ),
-    #             ),
-    #             dim=-1,
-    #         )
-
-    #         # Add the new token to the attention mask:
-    #         attention_mask = torch.cat(
-    #             (
-    #                 attention_mask,
-    #                 torch.tensor([[1]], device=idx.device).repeat(
-    #                     attention_mask.size(0), 1
-    #                 ),
-    #             ),
-    #             dim=-1,
-    #         )
-
-    #     # Now iterate over the saved samples:
-    #     predicted_products = []
-
-    #     # print(output_product)
-    #     for input_ids in predicted_product:
-    #         # print(input_ids)
-    #         product = []
-    #         for idx in input_ids:
-    #             # print(idx)
-    #             label = label2token[idx.item()]
-    #             # print(label)
-    #             if label != "[ENDP]":  # and label != "[PAD]":
-    #                 product.append(label)
-    #             if label == "[ENDP]":  # and label=="[PAD]":
-    #                 break
-    #         print("".join(product))
-    #         predicted_products.append(product)
-    #     # exit()
-    #     return predicted_products
-
-    # @torch.no_grad()
-    # def beam_search_decode(
-    #     self,
-    #     idx,
-    #     src_tgt_mask,
-    #     label2token,
-    #     max_new_tokens,
-    #     top_k,
-    #     use_sep_pos_enc,
-    #     use_attention_mask,
-    # ):
-    #     """
-    #     Conduct Beam search using the decoder model and the input reactants
-    #     - For now it is still unbatched - And very slow
-    #     """
-    #     # start_time1 = time.time()
-    #     # assert use_attention_mask == True, "Please use attention mask for beam search"
-
-    #     # setup attention_mask:
-    #     # attention_mask = torch.ones(1, idx.size(1), device=idx.device)
-
-    #     src_tgt_to_add = torch.tensor([[2]], device=idx.device)
-    #     # attention_mask_to_add = torch.ones(1, 1, device=idx.device)
-
-    #     candidates = [
-    #         {
-    #             "input_ids": idx,
-    #             "attention_mask": None,
-    #             "src_tgt_mask": src_tgt_mask,
-    #             "score": 0.0,
-    #         }
-    #     ]
-    #     completed_candidates = []
-
-    #     for i in range(max_new_tokens):
-    #         new_candidates = []
-
-    #         # start_time1 = time.time()
-    #         for candidate in candidates:
-    #             input_ids, attention_mask, src_tgt_mask, score = (
-    #                 candidate["input_ids"],
-    #                 candidate["attention_mask"],
-    #                 candidate["src_tgt_mask"],
-    #                 candidate["score"],
-    #             )
-
-    #             logits, _ = self(
-    #                 idx=input_ids,
-    #                 src_tgt_language_mask=src_tgt_mask,
-    #                 attention_mask=None,
-    #                 use_seperate_pos_enc=use_sep_pos_enc,
-    #             )
-    #             logits = torch.log_softmax(logits, dim=-1)
-    #             top_beams = torch.topk(logits, top_k, dim=-1)
-
-    #             # start_time1 = time.time()
-    #             for j in range(top_k):
-    #                 next_token = top_beams.indices[0, 0, j].item()
-    #                 next_score = top_beams.values[0, 0, j].item()
-
-    #                 if next_token == 289:
-    #                     completed_candidates.append(
-    #                         {
-    #                             "input_ids": input_ids,
-    #                             "attention_mask": attention_mask,
-    #                             "src_tgt_mask": src_tgt_mask,
-    #                             "score": score + next_score,
-    #                         }
-    #                     )
-    #                 else:
-    #                     new_input_ids = torch.cat(
-    #                         (
-    #                             input_ids,
-    #                             torch.tensor([[next_token]], device=input_ids.device),
-    #                         ),
-    #                         dim=-1,
-    #                     )
-    #                     # new_attention_mask = torch.cat((attention_mask, attention_mask_to_add), dim=-1)
-    #                     new_src_tgt_mask = torch.cat(
-    #                         (src_tgt_mask, src_tgt_to_add), dim=-1
-    #                     )
-    #                     new_candidates.append(
-    #                         {
-    #                             "input_ids": new_input_ids,
-    #                             "attention_mask": None,
-    #                             "src_tgt_mask": new_src_tgt_mask,
-    #                             "score": score + next_score,
-    #                         }
-    #                     )
-
-    #             # Sort candidates by score and only keep top_k:
-    #             new_candidates = sorted(
-    #                 new_candidates, key=lambda x: x["score"], reverse=True
-    #             )[:top_k]
-    #         # end_time1 = time.time()
-    #         # print(f"Beam search took: {end_time1 - start_time1} seconds")
-    #         # Sort candidates by score:
-    #         candidates = sorted(new_candidates, key=lambda x: x["score"], reverse=True)[
-    #             :top_k
-    #         ]
-
-    #     # end_time1 = time.time()
-    #     # exit()
-    #     # Add remaining Candidates:
-    #     completed_candidates.extend(candidates)
-
-    #     # print(len(completed_candidates))
-    #     # exit()
-
-    #     # Sort Final Candidates:
-    #     completed_candidates = sorted(
-    #         completed_candidates, key=lambda x: x["score"], reverse=True
-    #     )[:top_k]
-
-    #     # print(f"Beam search took: {end_time1 - start_time1} seconds")
-
-    #     # start_time_2 = time.time()
-    #     # Now iterate over the saved samples:
-    #     predicted_product = []
-    #     predicted_scores = []
-    #     for candidate in completed_candidates:
-    #         input_ids, score = candidate["input_ids"], candidate["score"]
-    #         product = []
-    #         is_part_of_product = False
-    #         for idx in input_ids[0]:
-    #             label = label2token[idx.item()]
-    #             if label == "[BEGP]":
-    #                 is_part_of_product = True
-    #             if label != "[ENDP]" and label != "[BEGP]" and is_part_of_product:
-    #                 product.append(label)
-    #             if label == "[ENDP]":
-    #                 break
-    #         # print("".join(product))
-    #         predicted_product.append(product)
-    #         predicted_scores.append(score)
-
-    #     return predicted_product, predicted_scores

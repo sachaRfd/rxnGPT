@@ -20,7 +20,7 @@ misc
 training-bimamba
 dist
 build
-MamboGPT.egg-info
+*.egg-info
 logs*
 rcp*
 *.ipynb
