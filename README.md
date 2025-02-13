@@ -1,8 +1,8 @@
-# Mambo GPT: Decoder-Only Model for Chemical Reaction Experiments
+# RXN GPT: Decoder-Only Model for Chemical Reaction Experiments
 
-Mambo GPT is a full reimplementation of a decoder-only architecture for machine translation, specifically designed for chemical reaction experiments. It includes the following features (non-optimized):
+RXN GPT is a full reimplementation of a decoder-only architecture for machine translation, specifically designed for chemical reaction experiments. It includes the following features (non-optimized):
 
-- Separate positional encodings for source (SRC) and target (TGT) tokens.
+- Separate positional encodings for source (reactant) and target (product) tokens.
 - SRC/TGT encoding that functions like language embeddings.
 - Bidirectional attention on SRC tokens (Prefix-LM style).
 
