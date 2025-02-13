@@ -1,8 +1,6 @@
 """
 Full implementation of Transformer Decoder Model.
-
 """
-
 
 import math
 import inspect
@@ -145,6 +143,7 @@ class CausalSelfAttention(nn.Module):
 
                 causal_mask = causal_mask.unsqueeze(0).repeat(B, 1, 1)
 
+                # Have Bidirectional Attention on the SRC tokens.
                 if src_tgt_language_mask is not None:
                     # Expand src_tgt_language_mask to match the shape of causal_mask
                     expanded_src_tgt_language_mask = src_tgt_language_mask.unsqueeze(
@@ -260,12 +259,16 @@ class Block(nn.Module):
 @dataclass
 class GPTConfig:
     block_size: int = 1024
-    vocab_size: int = 50304  # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency  # noqa
+    vocab_size: int = (
+        50304  # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency  # noqa
+    )
     n_layer: int = 12
     n_head: int = 12
     n_embd: int = 768
     dropout: float = 0.0
-    bias: bool = True  # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster    # noqa
+    bias: bool = (
+        True  # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster    # noqa
+    )
 
 
 class GPT(nn.Module):
@@ -348,7 +351,7 @@ class GPT(nn.Module):
             # Get masks:
             mask_1 = src_tgt_language_mask != 1
 
-            for i in range(b): # Could be optimised.
+            for i in range(b):  # Could be optimised.
                 # Get where the products are:
                 mask_sum = mask_1[i].sum()
 
@@ -489,7 +492,6 @@ class GPT(nn.Module):
 
             if idx.size(1) >= self.config.block_size:
                 break
-
 
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(

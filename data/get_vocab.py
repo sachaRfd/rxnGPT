@@ -23,6 +23,7 @@ import os
 import json
 from typing import Dict, List
 
+
 def learn_label_encoding(tokenized_inputs: List[List[str]]) -> Dict[str, int]:
     special_tokens = ["[PAD]", "[BEGR]", "[BEGP]", "[ENDR]", "[ENDP]"]
     unique_tokens = set(token for inp in tokenized_inputs for token in inp)
@@ -33,6 +34,7 @@ def learn_label_encoding(tokenized_inputs: List[List[str]]) -> Dict[str, int]:
             token2label[token] = len(token2label)
     return token2label
 
+
 def count_tokens(tokenized_inputs):
     token_count = {}
     for inp in tokenized_inputs:
@@ -40,38 +42,40 @@ def count_tokens(tokenized_inputs):
             token_count[token] = token_count.get(token, 0) + 1
     return token_count
 
+
 def main():
     parser = argparse.ArgumentParser(description="Generate vocabulary from dataset.")
     parser.add_argument("dataset_path", type=str, help="Path to the dataset directory.")
     args = parser.parse_args()
-    
+
     path_to_data = args.dataset_path
     assert os.path.isdir(path_to_data), f"Error: {path_to_data} is not a directory."
-    
+
     files = ["train", "val", "test"]
     files_format = [f"{path_to_data}/src-{file}.txt" for file in files] + [
         f"{path_to_data}/tgt-{file}.txt" for file in files
     ]
-    
+
     for file in files_format:
         assert os.path.isfile(file), f"Error: {file} does not exist."
-    
+
     data = []
     for file in files_format:
         with open(file, "r") as f:
             lines = [line.strip() for line in f.readlines()]
             data.extend(lines)
             print(f"Loaded {len(lines)} lines from {file}.")
-    
+
     print(f"Total data loaded: {len(data)}")
     token2label = learn_label_encoding([d.split() for d in data])
     print(f"Vocab created: {len(token2label)} tokens found.")
-    
+
     path_to_save = os.path.join(path_to_data, "token2label.json")
     with open(path_to_save, "w") as f:
         json.dump(token2label, f)
-    
+
     print(f"Vocabulary saved to {path_to_save}")
+
 
 if __name__ == "__main__":
     main()

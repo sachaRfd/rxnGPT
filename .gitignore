@@ -11,8 +11,7 @@ input.txt
 
 
 
-# Model Files: 
-exp*/
+# Model Files:
 out*/
 wandb
 setup_wandb.py

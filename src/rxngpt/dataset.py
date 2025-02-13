@@ -1,6 +1,5 @@
 """
-Adaptation of Karpathy's code for mol generation and chemical reaction prediciton: 
-
+Adaptation of Karpathy's code for mol generation and chemical reaction prediciton:
 """
 
 import os
@@ -8,7 +7,7 @@ import json
 from typing import Dict, List
 from torch.utils.data import Dataset, DataLoader
 
-from src.utils import collate_fn_right_padding
+from rxngpt.utils import collate_fn_right_padding
 
 
 def get_token2label(
@@ -181,67 +180,3 @@ class ReactDataset(Dataset):
             src_att_mask,
             tgt_att_mask,
         )
-
-
-if __name__ == "__main__":
-    print("Running Chem adaptation")
-    dataset = ReactDataset(use_mini_data=True)
-    print(len(dataset))
-
-    print("Pre-trainined collate_fn")
-    # setup loader:
-    loader = DataLoader(
-        dataset, batch_size=64, shuffle=True, collate_fn=collate_fn_right_padding
-    )
-
-    for (
-        x,
-        y,
-        react,
-        prod,
-        src_tgt_language_mask,
-        src_mask,
-        tgt_mask,
-        full_att_mask,
-        src_att_mask,
-        tgt_att_mask,
-    ) in loader:
-        print(x.shape)
-        print(y.shape)
-        print(react.shape)
-        print(prod.shape)
-        print(src_tgt_language_mask.shape)
-        print(src_mask.shape)
-        print(tgt_mask.shape)
-        print(full_att_mask.shape)
-        print(src_att_mask.shape)
-        print(tgt_att_mask.shape)
-        print()
-        print()
-        break
-
-    # print("New collate_fn")
-    # # setup loader:
-    # loader = DataLoader(
-    #     dataset,
-    #     batch_size=64,
-    #     shuffle=True,
-    #     collate_fn=collate_fn_right_padding_with_srctgt_emb,
-    # )
-    # for (
-    #     X,
-    #     Y,
-    #     r,
-    #     p,
-    #     src_tgt_mask,
-    #     src_mask,
-    #     tgt_mask,
-    # ) in loader:
-    #     print(X.shape)
-    #     print(Y.shape)
-    #     print(src_tgt_mask.shape)
-    #     print(r.shape)
-    #     print(p.shape)
-    #     print(src_mask.shape)
-    #     print(tgt_mask.shape)
-    #     break

@@ -1,0 +1,48 @@
+run_name: "decoder_testing_bidirectional_src_mask"
+output_dir: "exp_MIT_decoder/decoder_testing_bidirectional_src_mask"
+wandb_log: false
+wandb_project: "decoder_experiments"
+wandb_run_name: "decoder_testing_bidirectional_src_mask"
+
+trained_model_path: "exp_MIT_decoder/decoder_testing_bidirectional_src_mask/epoch_9_val_loss_4.6573_ckpt.pt"
+init_from: "scratch"
+
+data_path: "data/MIT_mixed"
+use_augm: false
+
+block_size: 560
+n_layer: 2
+n_head: 2
+n_embd: 128
+dropout: 0.1
+bias: false
+
+epochs: 10
+batch_size: 64
+accumulation_steps: 1
+learning_rate: 0.0001
+use_scheduler: false
+weight_decay: 0.0
+beta1: 0.9
+beta2: 0.95
+grad_clip: 1.0
+warmup_iters: 2000
+lr_decay_iters: 20000
+min_lr: 0.00005
+
+use_mini: true
+
+use_src_tgt_language_mask: true
+use_bidirectional_src_mask: false
+use_seperate_pos_enc: true
+finetune: false
+
+
+# Sampling:
+max_new_tokens: 1360
+temperature: 1.0
+decoding_algo: "greedy"
+top_k: 5
+seed: 1337
+use_attention_mask: true
+test_data_path: "data/MIT_mixed"

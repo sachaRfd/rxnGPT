@@ -3,6 +3,7 @@
 File for utility functions such as collating functions and more
 
 """
+
 import torch
 import math
 from torch.nn.utils.rnn import pad_sequence
@@ -38,8 +39,6 @@ def collate_fn_pre_training(r_and_p_list):
 
     # Create positional embeddings:
     src_tgt_pos = r_pos + p_pos
-    # print(src_tgt_pos)
-    # exit()
 
     # Pad sequences:
     reaction = pad_sequences(reaction)

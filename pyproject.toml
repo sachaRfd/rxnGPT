@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "RXN-GPT"
+version = "0.1.0"
+description = "GPT Model for chemical Reactions."
+authors = [
+    {name = "sachaRfd"},
+]
+requires-python = "==3.12.2"
+dependencies = [
+    "numpy==2.2.2",
+    "torch==2.5.1",
+    "pandas",
+    "matplotlib",
+    "ipykernel",
+    "tqdm",
+    "pre-commit",
+    "wandb",
+    "transformers",
+    "datasets",
+    "tiktoken",
+    "rdkit"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = {find = {where = ["src"]}}
+
+[tool.setuptools.package-data]
+"*" = ["*.txt", "*.rst"]

@@ -1,10 +1,9 @@
 """
-Evaluation script of generated data
+Evaluation script of the generated data
 """
 
 from rdkit import Chem
 import pandas as pd
-import atomInSmiles
 import os
 
 
@@ -23,14 +22,6 @@ def get_rank(row, base, max_rank):
     return 0
 
 
-def decode_ais(ais_tokens):
-    """
-    Decode AIS tokens to SMILES.
-    """
-    smiles = atomInSmiles.decode(ais_tokens)
-    return smiles
-
-
 def main(opt):
     with open(opt.targets, "r") as f:
         targets = ["".join(line.strip().split(" ")) for line in f.readlines()]
@@ -41,20 +32,11 @@ def main(opt):
     test_df.columns = ["target"]
     total = len(test_df)
 
-    # Check if ais is in the opt.predictions:
-    if "ais" in opt.predictions:
-        print("AIS tokens detected in predictions")
-        with open(opt.predictions, "r") as f:
-            for i, line in enumerate(f.readlines()):
-                predictions[i % opt.beam_size].append(
-                    decode_ais(line.strip()),
-                )
-    else:
-        with open(opt.predictions, "r") as f:
-            for i, line in enumerate(f.readlines()):
-                predictions[i % opt.beam_size].append(
-                    "".join(line.strip().split(" ")),
-                )
+    with open(opt.predictions, "r") as f:
+        for i, line in enumerate(f.readlines()):
+            predictions[i % opt.beam_size].append(
+                "".join(line.strip().split(" ")),
+            )
 
     for i, preds in enumerate(predictions):
         # Get canonical Target too:
@@ -78,7 +60,9 @@ def main(opt):
 
     for i in range(1, opt.beam_size + 1):
         correct += (test_df["rank"] == i).sum()
-        invalid_smiles = (test_df["canonical_prediction_{}".format(i)] == "").sum()  # noqa
+        invalid_smiles = (
+            test_df["canonical_prediction_{}".format(i)] == ""
+        ).sum()  # noqa
         invalid_smiles_count += invalid_smiles
 
         if opt.invalid_smiles:
